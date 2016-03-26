@@ -1,5 +1,7 @@
 package com.khovanskiy.snake.client.state;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.GL20;
 import com.khovanskiy.snake.client.model.ClientGameWorld;
 import com.khovanskiy.snake.common.Const;
 import com.khovanskiy.snake.common.component.NetworkComponent;
@@ -8,6 +10,7 @@ import com.khovanskiy.snake.common.message.ReserveMessage;
 import com.khovanskiy.snake.common.message.TokenMessage;
 import com.khovanskiy.snake.common.model.GameObject;
 import com.khovanskiy.snake.common.model.GameWorld;
+import com.khovanskiy.snake.common.state.State;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
@@ -33,7 +36,7 @@ public class InitialState extends State {
     private void sendReserveMessage() {
         log.info("Отправляем anycast запрос на подключение к серверу");
         timestamp = System.currentTimeMillis();
-        networkComponent.connect(new InetSocketAddress("::1", 1111), new NetworkComponent.onConnectListener() {
+        networkComponent.connect(Const.ANYCAST_ADDRESS, new NetworkComponent.onConnectListener() {
             @Override
             public void onConnected(TCPConnection connection) {
                 connection.listen(new TCPConnection.Listener() {
@@ -60,5 +63,11 @@ public class InitialState extends State {
             log.info("Ни один сервер не ответил в течение " + MAX_TIMEOUT + " ms");
             sendReserveMessage();
         }
+    }
+
+    @Override
+    public void render() {
+        super.render();
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
     }
 }

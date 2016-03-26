@@ -1,4 +1,4 @@
-package com.khovanskiy.snake.client.state;
+package com.khovanskiy.snake.common.state;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -36,6 +36,10 @@ public class Context {
             }
         }
         currentState.update(dt);
+    }
+
+    public void render() {
+        currentState.render();
     }
 
     public void runLater(Runnable runnable) {

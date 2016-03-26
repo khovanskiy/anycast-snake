@@ -6,6 +6,6 @@ import com.khovanskiy.snake.common.model.GameWorld;
  * @author victor
  */
 public class ServerGameWorld extends GameWorld {
-
-
+    String serverName;
+    int port;
 }

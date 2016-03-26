@@ -249,9 +249,11 @@ public class NetworkComponent extends Component {
                 try (ServerSocket accepter = new ServerSocket(port)) {
                     attempt = 0;
                     listener.onConnected();
-                    Socket socket = accepter.accept();
-                    log.info("Принят новый клиент = " + socket);
-                    listener.onAccept(new TCPConnection(NetworkComponent.this, socket));
+                    while (!accepter.isClosed()) {
+                        Socket socket = accepter.accept();
+                        log.info("Принят новый клиент = " + socket);
+                        listener.onAccept(new TCPConnection(NetworkComponent.this, socket));
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                     ++attempt;

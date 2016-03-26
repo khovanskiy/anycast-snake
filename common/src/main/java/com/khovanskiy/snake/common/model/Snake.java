@@ -28,6 +28,31 @@ public class Snake {
         return parts.size();
     }
 
+    public List<Part> getParts() {
+        return parts;
+    }
+
+    public void move(Direction direction) {
+        int dx = 0;
+        int dy = 0;
+        switch (direction) {
+            case UP:++dy;
+                break;
+            case DOWN:--dy;
+                break;
+            case LEFT:--dx;
+                break;
+            case RIGHT:++dx;
+                break;
+        }
+        for (int i = parts.size() - 1; i > 0; --i) {
+            parts.get(i).x(parts.get(i - 1).x());
+            parts.get(i).y(parts.get(i - 1).y());
+        }
+        parts.get(0).x(parts.get(0).x() + dx);
+        parts.get(0).y(parts.get(0).y() + dy);
+    }
+
     /**
      * @return позицию головы
      */
@@ -40,6 +65,22 @@ public class Snake {
 
         public Part(Vector2 position) {
             this.position = position.cpy();
+        }
+
+        public float x() {
+            return position.x;
+        }
+
+        public void x(float x) {
+            position.x = x;
+        }
+
+        public float y() {
+            return position.y;
+        }
+
+        public void y(float y) {
+            position.y = y;
         }
     }
 }

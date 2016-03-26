@@ -1,7 +1,7 @@
 package com.khovanskiy.snake.client;
 
 import com.badlogic.gdx.ApplicationAdapter;
-import com.khovanskiy.snake.client.state.Context;
+import com.khovanskiy.snake.common.state.Context;
 import com.khovanskiy.snake.client.state.InitialState;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,6 +35,7 @@ public class GameClient extends ApplicationAdapter {
             nextGameTick += SKIP_TICKS;
             loops++;
         }
+        context.render();
     }
 
     public void update(double dt) {

@@ -1,23 +1,17 @@
 package com.khovanskiy.snake.server;
 
-import com.khovanskiy.snake.common.component.NetworkComponent;
-import com.khovanskiy.snake.common.component.TCPConnection;
-import com.khovanskiy.snake.common.message.ReserveMessage;
-import com.khovanskiy.snake.common.message.TokenMessage;
-import com.khovanskiy.snake.common.model.GameWorld;
+import com.khovanskiy.snake.common.state.Context;
+import com.khovanskiy.snake.server.state.GameplayState;
 import lombok.extern.slf4j.Slf4j;
-
-import java.net.InetAddress;
-import java.util.UUID;
 
 /**
  * @author victor
  */
 @Slf4j
 public class ServerApplication implements Runnable {
-
     private final String serverName;
     private final int port;
+    private final Context context = new Context();
 
     public static void main(String[] args) {
         new ServerApplication(args[0], Integer.parseInt(args[1])).run();
@@ -31,33 +25,9 @@ public class ServerApplication implements Runnable {
     }
 
     public void run() {
-        NetworkComponent component = new NetworkComponent();
-        component.start(1111, new NetworkComponent.onAcceptListener() {
-            @Override
-            public void onConnected() {
-                log.info("Сервер " + serverName + " запущен на " + port);
-            }
-
-            @Override
-            public void onAccept(TCPConnection connection) {
-                connection.listen(new TCPConnection.Listener() {
-                    @Override
-                    public void onReceived(Object object) {
-                        ReserveMessage message = (ReserveMessage) object;
-                        log.info("From client: " + message);
-                        UUID uuid = UUID.randomUUID();
-                        connection.send(new TokenMessage(uuid, null, 1111));
-                    }
-
-                    @Override
-                    public void onError(Exception e) {
-                        log.error(e.getMessage(), e);
-                    }
-                });
-            }
-        });
+        context.startState(null, GameplayState.class);
         while (true) {
-            //gameWorld.update(1000);
+            context.update(1d);
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {

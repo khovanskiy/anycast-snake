@@ -1,4 +1,4 @@
-package com.khovanskiy.snake.client.state;
+package com.khovanskiy.snake.common.state;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +16,10 @@ public abstract class State {
     }
 
     public void update(double dt) {
+
+    }
+
+    public void render() {
 
     }
 
