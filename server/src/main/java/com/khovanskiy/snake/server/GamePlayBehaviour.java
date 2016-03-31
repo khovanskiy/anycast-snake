@@ -10,10 +10,7 @@ import com.khovanskiy.snake.common.model.GameWorld;
 public class GamePlayBehaviour {
 
     public void update(double dt) {
-        GameWorld world = GameObject.find(Const.GAME_WORLD);
-        world.players.values().forEach(player -> {
-            player.update(dt);
-        });
+
     }
 
 }

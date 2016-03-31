@@ -12,6 +12,7 @@ import com.khovanskiy.snake.common.model.GameObject;
 import com.khovanskiy.snake.common.model.GameWorld;
 import com.khovanskiy.snake.common.state.State;
 import lombok.extern.slf4j.Slf4j;
+import rx.functions.Action1;
 
 import java.net.InetSocketAddress;
 
@@ -36,23 +37,23 @@ public class InitialState extends State {
     private void sendReserveMessage() {
         log.info("Отправляем anycast запрос на подключение к серверу");
         timestamp = System.currentTimeMillis();
-        networkComponent.connect(Const.ANYCAST_ADDRESS, new NetworkComponent.onConnectListener() {
-            @Override
-            public void onConnected(TCPConnection connection) {
-                connection.listen(new TCPConnection.Listener() {
-                    @Override
-                    public void onReceived(Object object) {
-                        TokenMessage tokenMessage = (TokenMessage) object;
-                        log.info("Получен токен = " + tokenMessage + " - закрываем временное соединение");
-                        connection.close();
-                        runLater(() -> {
-                            ClientGameWorld gameWorld = GameObject.find(Const.GAME_WORLD);
-                            gameWorld.token = tokenMessage.getToken();
-                            setState(InitialState.this, ConnectionState.class);
-                        });
-                    }
-                }).send(new ReserveMessage());
-            }
+        networkComponent.connect(Const.ANYCAST_ADDRESS).subscribe(connection -> {
+            log.info("Подключение по anycast произошло");
+            connection.listen(new TCPConnection.Listener() {
+                @Override
+                public void onReceived(Object object) {
+                    TokenMessage tokenMessage = (TokenMessage) object;
+                    log.info("Получен токен = " + tokenMessage + " - закрываем временное соединение");
+                    connection.close();
+                    runLater(() -> {
+                        ClientGameWorld gameWorld = GameObject.find(Const.GAME_WORLD);
+                        gameWorld.token = tokenMessage.getToken();
+                        setState(InitialState.this, ConnectionState.class);
+                    });
+                }
+            }).send(new ReserveMessage());
+        }, e -> {
+            log.error(e.getMessage(), e);
         });
     }
 

@@ -11,6 +11,4 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Slf4j
 public class GameWorld extends GameObject {
-    public final AtomicInteger idx = new AtomicInteger();
-    public final Map<Integer, Player> players = new HashMap<>();
 }

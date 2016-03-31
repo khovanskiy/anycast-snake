@@ -5,9 +5,11 @@ import com.khovanskiy.snake.common.component.NetworkComponent;
 import com.khovanskiy.snake.common.component.TCPConnection;
 import com.khovanskiy.snake.common.message.AuthMessage;
 import com.khovanskiy.snake.common.message.ClientStatusMessage;
-import com.khovanskiy.snake.common.message.ReserveMessage;
 import com.khovanskiy.snake.common.message.TokenMessage;
+import com.khovanskiy.snake.common.model.GameObject;
+import com.khovanskiy.snake.common.model.Player;
 import com.khovanskiy.snake.common.state.State;
+import com.khovanskiy.snake.server.model.ServerGameWorld;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.UUID;
@@ -18,16 +20,20 @@ import java.util.UUID;
 @Slf4j
 public class GameplayState extends State {
     NetworkComponent component = new NetworkComponent();
+    ServerGameWorld world;
 
     @Override
     public void create() {
         super.create();
-        String serverName = "server-1";
-        int port = 1111;
-        component.start(port, new NetworkComponent.onAcceptListener() {
+        world = GameObject.create(Const.GAME_WORLD, ServerGameWorld.class);
+        world.serverName = "server-1";
+        world.port = 1111;
+        component.start(world.getPort(), new NetworkComponent.onAcceptListener() {
             @Override
             public void onConnected() {
-                log.info("Сервер " + serverName + " запущен на " + port + " для принятия unicast");
+                runLater(() -> {
+                    log.info("Сервер " + world.getServerName() + " запущен на " + world.getPort() + " для принятия unicast");
+                });
             }
 
             @Override
@@ -35,17 +41,45 @@ public class GameplayState extends State {
                 connection.listen(new TCPConnection.Listener() {
                     @Override
                     public void onReceived(Object object) {
-                        if (object instanceof AuthMessage) {
-                            AuthMessage message = (AuthMessage) object;
-                            log.info("Пользователь " + message.getToken() + " успешно подключился к игровой сессии");
-                        } else if (object instanceof ClientStatusMessage) {
-                            ClientStatusMessage message = (ClientStatusMessage) object;
-                        }
+                        runLater(() -> {
+                            if (object instanceof AuthMessage) {
+                                AuthMessage message = (AuthMessage) object;
+                                log.info("Пользователь " + message.getToken() + " успешно подключился к игровой сессии");
+
+                                Player player = world.getUuidPlayerMap().get(message.getToken());
+                                if (player == null) {
+                                    player = new Player(message.getToken());
+                                    world.uuidPlayerMap.put(message.getToken(), player);
+                                }
+                                player.connection = connection;
+                                world.connectionPlayerMap.put(connection, player);
+
+                            } else if (object instanceof ClientStatusMessage) {
+                                ClientStatusMessage message = (ClientStatusMessage) object;
+
+                                Player player = world.connectionPlayerMap.get(connection);
+                                if (player != null) {
+                                    player.direction = message.getDirection();
+                                }
+
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onDisconnected() {
+                        runLater(() -> {
+                            Player player = world.connectionPlayerMap.get(connection);
+                            world.uuidPlayerMap.remove(player.token);
+                            world.connectionPlayerMap.remove(connection);
+                        });
                     }
 
                     @Override
                     public void onError(Exception e) {
-                        log.error(e.getMessage(), e);
+                        runLater(() -> {
+                            log.error(e.getMessage(), e);
+                        });
                     }
                 });
             }
@@ -53,7 +87,9 @@ public class GameplayState extends State {
         component.start(Const.ANYCAST_PORT, new NetworkComponent.onAcceptListener() {
             @Override
             public void onConnected() {
-                log.info("Сервер " + serverName + " запущен на " + Const.ANYCAST_PORT + " для принятия anycast");
+                runLater(() -> {
+                    log.info("Сервер " + world.getServerName() + " запущен на " + Const.ANYCAST_PORT + " для принятия anycast");
+                });
             }
 
             @Override
@@ -61,9 +97,8 @@ public class GameplayState extends State {
                 connection.listen(new TCPConnection.Listener() {
                     @Override
                     public void onReceived(Object object) {
-                        ReserveMessage message = (ReserveMessage) object;
                         UUID uuid = UUID.randomUUID();
-                        connection.send(new TokenMessage(uuid, null, port));
+                        connection.send(new TokenMessage(uuid, null, world.getPort()));
                     }
 
                     @Override
@@ -78,6 +113,12 @@ public class GameplayState extends State {
     @Override
     public void update(double dt) {
         super.update(dt);
+        world.uuidPlayerMap.values().forEach(player -> {
+            player.update(dt);
+        });
+        world.uuidPlayerMap.values().forEach(player -> {
+            player.connection.send(player.snake.snapshot());
+        });
     }
 
     @Override

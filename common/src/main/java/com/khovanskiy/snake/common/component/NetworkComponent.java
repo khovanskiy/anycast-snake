@@ -3,6 +3,11 @@ package com.khovanskiy.snake.common.component;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import rx.Observable;
+import rx.Scheduler;
+import rx.Subscriber;
+import rx.observables.ConnectableObservable;
+import rx.schedulers.Schedulers;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -18,6 +23,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -32,6 +38,8 @@ public class NetworkComponent extends Component {
     private final Map<Integer, Accepter> acceptors = new HashMap<>();
     private final Map<Integer, UDPReceiver> receivers = new HashMap<>();
     private UDPSender sender;
+    private static final Scheduler CONNECT_SCHEDULER = Schedulers.from(Executors.newCachedThreadPool());
+    private final Map<InetSocketAddress, Observable<TCPConnection>> connectors = new HashMap<>();
 
 
     public NetworkComponent() {
@@ -43,11 +51,32 @@ public class NetworkComponent extends Component {
      * Подключиться к указанному адресу
      *
      * @param address адрес
-     * @param listener обработчик подключения
      */
-    public NetworkComponent connect(InetSocketAddress address, onConnectListener listener) {
-        new Thread(new Connector(address.getAddress(), address.getPort(), listener)).start();
-        return this;
+    public Observable<TCPConnection> connect(final InetSocketAddress address) {
+        synchronized (connectors) {
+            Observable<TCPConnection> observable = connectors.get(address);
+            if (observable == null) {
+                observable = Observable.create((Observable.OnSubscribe<TCPConnection>) subscriber -> {
+                    int attempt = 0;
+                    while (attempt < MAX_ATTEMPTS_COUNT) {
+                        try {
+                            Socket socket = new Socket(address.getAddress(), address.getPort());
+                            synchronized (connectors) {
+                                connectors.remove(address);
+                            }
+                            subscriber.onNext(new TCPConnection(NetworkComponent.this, socket));
+                            subscriber.onCompleted();
+                            return;
+                        } catch (IOException e) {
+                            ++attempt;
+                            subscriber.onError(e);
+                        }
+                    }
+                }).subscribeOn(CONNECT_SCHEDULER).publish().autoConnect();
+                connectors.put(address, observable);
+            }
+            return observable;
+        }
     }
 
     /**

@@ -2,16 +2,20 @@ package com.khovanskiy.snake.common.model;
 
 import com.badlogic.gdx.math.Vector2;
 import com.khovanskiy.snake.common.Direction;
+import com.sun.xml.internal.ws.Closeable;
+import lombok.Data;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author victor
  */
-public class Snake {
+@Data
+public class Snake implements Serializable {
     private List<Part> parts;
-    private Direction direction;
 
     public Snake(Vector2 position, int length) {
         assert length > 0;
@@ -21,7 +25,17 @@ public class Snake {
             this.parts.add(new Part(current));
             current.y++;
         }
-        this.direction = Direction.UP;
+    }
+
+    private Snake() {
+
+    }
+
+    public Snake snapshot() {
+        Snake other = new Snake();
+        other.parts = new ArrayList<>();
+        other.parts.addAll(this.parts.stream().map(Part::copy).collect(Collectors.toList()));
+        return other;
     }
 
     public int getLength() {
@@ -60,8 +74,13 @@ public class Snake {
         return parts.get(0).position;
     }
 
-    public class Part {
+    @Data
+    public class Part implements Serializable {
         private final Vector2 position;
+
+        public Part copy() {
+            return new Part(position);
+        }
 
         public Part(Vector2 position) {
             this.position = position.cpy();

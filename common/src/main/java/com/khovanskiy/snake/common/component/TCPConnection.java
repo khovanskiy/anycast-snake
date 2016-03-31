@@ -69,7 +69,7 @@ public class TCPConnection {
                     }
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                // e.printStackTrace();
             }
         }
     }
