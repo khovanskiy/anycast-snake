@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
+import rx.Subscription;
+import rx.functions.Action0;
 import rx.observables.ConnectableObservable;
 import rx.schedulers.Schedulers;
 
@@ -26,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Компонент для работы с сетью
@@ -40,7 +43,7 @@ public class NetworkComponent extends Component {
     private final Map<Integer, UDPReceiver> receivers = new HashMap<>();
     private UDPSender sender;
     private static final Scheduler CONNECT_SCHEDULER = Schedulers.from(Executors.newCachedThreadPool());
-    private final Map<InetSocketAddress, Observable<TCPConnection>> connectors = new HashMap<>();
+    private final Map<InetSocketAddress, ConnectAction> connectActionMap = new HashMap<>();
 
 
     public NetworkComponent() {
@@ -54,18 +57,30 @@ public class NetworkComponent extends Component {
      * @param address адрес
      */
     public Observable<TCPConnection> connect(final InetSocketAddress address) {
-        synchronized (connectors) {
-            Observable<TCPConnection> observable = connectors.get(address);
-            if (observable == null) {
-                observable = Observable.create((Observable.OnSubscribe<TCPConnection>) subscriber -> {
+        synchronized (connectActionMap) {
+            ConnectAction connectAction = connectActionMap.get(address);
+            if (connectAction == null) {
+                connectAction = new ConnectAction();
+                connectActionMap.put(address, connectAction);
+            }
+            if (connectAction.connection != null) {
+                return Observable.just(connectAction.connection).subscribeOn(CONNECT_SCHEDULER);
+            }
+            if (connectAction.observable == null) {
+                connectAction.observable = Observable.create((Observable.OnSubscribe<TCPConnection>) subscriber -> {
                     int attempt = 0;
                     while (attempt < MAX_ATTEMPTS_COUNT) {
                         try {
+                            log.info("try to connect " + address);
                             Socket socket = new Socket(address.getAddress(), address.getPort());
-                            synchronized (connectors) {
-                                connectors.remove(address);
+                            TCPConnection connection = new TCPConnection(NetworkComponent.this, address, socket);
+                            synchronized (connectActionMap) {
+                                ConnectAction action = connectActionMap.get(address);
+                                assert action != null;
+                                action.connection = connection;
+                                action.observable = null;
                             }
-                            subscriber.onNext(new TCPConnection(NetworkComponent.this, socket));
+                            subscriber.onNext(connection);
                             subscriber.onCompleted();
                             return;
                         } catch (IOException e) {
@@ -73,11 +88,31 @@ public class NetworkComponent extends Component {
                             subscriber.onError(e);
                         }
                     }
+                    if (attempt == MAX_ATTEMPTS_COUNT) {
+                        synchronized (connectActionMap) {
+                            connectActionMap.remove(address);
+                        }
+                    }
                 }).subscribeOn(CONNECT_SCHEDULER).publish().autoConnect();
-                connectors.put(address, observable);
             }
-            return observable;
+            return connectAction.observable;
         }
+    }
+
+    /**
+     * Удалить TCP-соединение
+     *
+     * @param connection соединение
+     */
+    void remove(TCPConnection connection) {
+        synchronized (connectActionMap) {
+            connectActionMap.remove(connection.address);
+        }
+    }
+
+    private class ConnectAction {
+        Observable<TCPConnection> observable;
+        TCPConnection connection;
     }
 
     /**
@@ -234,33 +269,6 @@ public class NetworkComponent extends Component {
         }
     }
 
-    private class Connector implements Runnable {
-        private final InetAddress address;
-        private final int port;
-        private final onConnectListener listener;
-
-        public Connector(InetAddress address, int port, onConnectListener listener) {
-            this.address = address;
-            this.port = port;
-            this.listener = listener;
-        }
-
-        @Override
-        public void run() {
-            int attempt = 0;
-            while (attempt < MAX_ATTEMPTS_COUNT) {
-                try {
-                    Socket socket = new Socket(address, port);
-                    listener.onConnected(new TCPConnection(NetworkComponent.this, socket));
-                    break;
-                } catch (IOException e) {
-                    log.error(e.getMessage(), e);
-                    ++attempt;
-                }
-            }
-        }
-    }
-
     private class Accepter implements Runnable {
         private final InetAddress address;
         private final int port;
@@ -283,7 +291,7 @@ public class NetworkComponent extends Component {
                     while (!accepter.isClosed()) {
                         Socket socket = accepter.accept();
                         log.info("Принят новый клиент = " + socket);
-                        listener.onAccept(new TCPConnection(NetworkComponent.this, socket));
+                        listener.onAccept(new TCPConnection(NetworkComponent.this, null, socket));
                     }
                 } catch (IOException e) {
                     log.error(e.getMessage(), e);

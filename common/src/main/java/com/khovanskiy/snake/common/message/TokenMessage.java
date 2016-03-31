@@ -17,4 +17,5 @@ public class TokenMessage extends Message {
     UUID token;
     InetAddress address;
     int port;
+    String serverName;
 }

@@ -12,6 +12,11 @@ public abstract class State {
     private Context context;
     private Logger logger = LoggerFactory.getLogger(this.getClass());
     private Bundle bundle;
+    private final Thread mainThread;
+
+    public State() {
+        mainThread = Thread.currentThread();
+    }
 
     public void create() {
         logger.info("create");
@@ -30,10 +35,12 @@ public abstract class State {
     }
 
     public <T extends State> void setState(State state, Class<T> clazz) {
+        assert Thread.currentThread() == mainThread;
         context.startState(state, clazz);
     }
 
     public void setContext(Context context) {
+        assert Thread.currentThread() == mainThread;
         this.context = context;
     }
 

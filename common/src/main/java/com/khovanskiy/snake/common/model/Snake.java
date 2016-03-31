@@ -3,6 +3,7 @@ package com.khovanskiy.snake.common.model;
 import com.badlogic.gdx.math.Vector2;
 import com.khovanskiy.snake.common.Direction;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -13,7 +14,8 @@ import java.util.stream.Collectors;
  * @author victor
  */
 @Data
-public class Snake implements Serializable {
+@EqualsAndHashCode(callSuper = true)
+public class Snake extends Model {
     private List<Part> parts;
 
     public Snake(Vector2 position, int length) {
@@ -74,7 +76,8 @@ public class Snake implements Serializable {
     }
 
     @Data
-    public class Part implements Serializable {
+    @EqualsAndHashCode(callSuper = true)
+    public class Part extends Model {
         private final Vector2 position;
 
         public Part copy() {

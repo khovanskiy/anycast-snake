@@ -2,19 +2,15 @@ package com.khovanskiy.snake.client.state;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
-import com.khovanskiy.snake.client.model.ClientGameWorld;
+import com.khovanskiy.snake.client.model.ClientSession;
 import com.khovanskiy.snake.common.Const;
 import com.khovanskiy.snake.common.component.NetworkComponent;
-import com.khovanskiy.snake.common.component.TCPConnection;
 import com.khovanskiy.snake.common.message.ReserveMessage;
 import com.khovanskiy.snake.common.message.TokenMessage;
 import com.khovanskiy.snake.common.model.GameObject;
 import com.khovanskiy.snake.common.model.GameWorld;
 import com.khovanskiy.snake.common.state.State;
 import lombok.extern.slf4j.Slf4j;
-import rx.functions.Action1;
-
-import java.net.InetSocketAddress;
 
 /**
  * @author victor
@@ -28,9 +24,9 @@ public class InitialState extends State {
     @Override
     public void create() {
         super.create();
-        GameWorld gameWorld = GameObject.create(Const.GAME_WORLD, ClientGameWorld.class);
+        ClientSession session = GameObject.create(Const.GAME_WORLD, ClientSession.class);
         networkComponent = new NetworkComponent();
-        gameWorld.addComponent(networkComponent);
+        session.addComponent(networkComponent);
         sendReserveMessage();
     }
 
@@ -39,21 +35,25 @@ public class InitialState extends State {
         timestamp = System.currentTimeMillis();
         networkComponent.connect(Const.ANYCAST_ADDRESS).subscribe(connection -> {
             log.info("Подключение по anycast произошло");
-            connection.listen(new TCPConnection.Listener() {
-                @Override
-                public void onReceived(Object object) {
-                    TokenMessage tokenMessage = (TokenMessage) object;
-                    log.info("Получен токен = " + tokenMessage + " - закрываем временное соединение");
-                    connection.close();
-                    runLater(() -> {
-                        ClientGameWorld gameWorld = GameObject.find(Const.GAME_WORLD);
-                        gameWorld.token = tokenMessage.getToken();
-                        setState(InitialState.this, ConnectionState.class);
-                    });
-                }
-            }).send(new ReserveMessage());
+            connection.listen().subscribe(o -> {
+                TokenMessage tokenMessage = (TokenMessage) o;
+                log.info("Получен токен = " + tokenMessage + " - закрываем временное соединение");
+                connection.close();
+                runLater(() -> {
+                    ClientSession world = GameObject.find(Const.GAME_WORLD);
+                    world.setToken(tokenMessage.getToken());
+                    world.setAddress(tokenMessage.getAddress());
+                    world.setPort(tokenMessage.getPort());
+                    world.setServerName(tokenMessage.getServerName());
+                    log.info("Сервер предлагает подключиться к " + world.getAddress() + " [" + world.getPort() + "]");
+                    setState(InitialState.this, GameplayState.class);
+                });
+            }, e -> {
+
+            });
+            connection.send(new ReserveMessage());
         }, e -> {
-            log.error(e.getMessage(), e);
+            log.error(e.getMessage());
         });
     }
 

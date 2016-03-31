@@ -2,15 +2,16 @@ package com.khovanskiy.snake.common.model;
 
 import com.khovanskiy.snake.common.component.Component;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * @author victor
  */
-public class GameObject {
+public class GameObject implements Serializable {
     private static final Map<String, GameObject> objects = new HashMap<>();
-    private final Map<Class<? extends Component>, Component> components = new HashMap<>();
+    private transient final Map<Class<? extends Component>, Component> components = new HashMap<>();
 
     public void addComponent(Component component) {
         components.put(component.getClass(), component);

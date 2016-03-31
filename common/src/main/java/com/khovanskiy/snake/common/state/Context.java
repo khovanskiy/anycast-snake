@@ -8,14 +8,20 @@ import java.util.Queue;
  */
 public class Context {
     public State currentState;
-    public static final int MAX_COUNT = 5;
+    public static final int MAX_COUNT = 64;
     private final Queue<Runnable> queue = new ArrayDeque<>();
+    private final Thread mainThread;
+
+    public Context() {
+        mainThread = Thread.currentThread();
+    }
 
     public <T extends State> void startState(State current, Class<T> clazz) {
         startState(current, clazz, new Bundle());
     }
 
     public <T extends State> void startState(State current, Class<T> clazz, Bundle bundle) {
+        assert Thread.currentThread() == mainThread : "Current thread = " + Thread.currentThread() + ", main thread = " + mainThread;
         T newState;
         try {
             newState = clazz.newInstance();
