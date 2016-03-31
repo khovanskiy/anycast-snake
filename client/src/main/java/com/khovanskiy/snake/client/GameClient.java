@@ -13,7 +13,7 @@ public class GameClient extends ApplicationAdapter {
     /**
      * Количество тиков в секунду
      */
-    public static final int TICKS_PER_SECOND = 2;
+    public static final int TICKS_PER_SECOND = 5;
     public static final int SKIP_TICKS = 1000 / TICKS_PER_SECOND;
     public static final int MAX_FRAMESKIP = 20;
     private long nextGameTick;

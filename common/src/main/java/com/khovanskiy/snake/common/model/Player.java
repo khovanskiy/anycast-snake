@@ -15,6 +15,7 @@ import java.util.UUID;
 @EqualsAndHashCode(callSuper = true)
 public class Player extends Model {
     public Snake snake;
+    private long score;
     public Direction direction = Direction.UP;
     public UUID playerId;
 

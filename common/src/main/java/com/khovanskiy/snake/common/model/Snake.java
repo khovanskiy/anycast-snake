@@ -24,7 +24,7 @@ public class Snake extends Model {
         Vector2 current = position.cpy();
         for (int i = 0; i < length; ++i) {
             this.parts.add(new Part(current));
-            current.y++;
+            current.y--;
         }
     }
 
@@ -45,6 +45,14 @@ public class Snake extends Model {
 
     public List<Part> getParts() {
         return parts;
+    }
+
+    public Part getHead() {
+        return parts.get(0);
+    }
+
+    public Part getTail() {
+        return parts.get(parts.size() - 1);
     }
 
     public void move(Direction direction) {
@@ -68,11 +76,22 @@ public class Snake extends Model {
         parts.get(0).y(parts.get(0).y() + dy);
     }
 
+    public void increase() {
+        parts.add(new Part(getTailPosition()));
+    }
+
     /**
      * @return позицию головы
      */
-    public Vector2 getPosition() {
+    public Vector2 getHeadPosition() {
         return parts.get(0).position;
+    }
+
+    /**
+     * @return позицию хвоста
+     */
+    public Vector2 getTailPosition() {
+        return parts.get(parts.size() - 1).position;
     }
 
     @Data

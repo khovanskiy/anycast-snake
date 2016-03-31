@@ -39,7 +39,6 @@ public class TCPConnection {
                 while (!socket.isClosed() && !subscriber.isUnsubscribed()) {
                     try {
                         Object object = queue.take();
-                        log.info("Send: " + object);
                         stream.writeObject(object);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
