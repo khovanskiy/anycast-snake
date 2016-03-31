@@ -19,6 +19,28 @@ import java.util.UUID;
  */
 @Slf4j
 public class GameplayState extends State {
+    /**
+     * Имя сервера
+     */
+    public static final String SERVER_NAME = "hostname";
+    /**
+     * Адресс для подключения игроков
+     */
+    public static final String ADDRESS = "address";
+    /**
+     * Порт для подключения игроков
+     */
+    public static final String PORT = "port";
+    /**
+     * Адресс для подключения игроков
+     */
+    public static final String ANYCAST_ADDRESS = "anycast_address";
+    /**
+     * Порт для подключения игроков
+     */
+    public static final String ANYCAST_PORT = "anycast_port";
+
+
     NetworkComponent component = new NetworkComponent();
     ServerGameWorld world;
 
@@ -26,13 +48,17 @@ public class GameplayState extends State {
     public void create() {
         super.create();
         world = GameObject.create(Const.GAME_WORLD, ServerGameWorld.class);
-        world.serverName = "server-1";
-        world.port = 1111;
-        component.start(world.getPort(), new NetworkComponent.onAcceptListener() {
+        world.serverName = getBundle().getExtra(GameplayState.SERVER_NAME);
+        world.address = getBundle().getExtra(GameplayState.ADDRESS);
+        world.port = getBundle().getExtra(GameplayState.PORT);
+        world.anycastAddress = getBundle().getExtra(ANYCAST_ADDRESS);
+        world.anycastPort = getBundle().getExtra(ANYCAST_PORT);
+
+        component.start(world.getAddress(), world.getPort(), new NetworkComponent.onAcceptListener() {
             @Override
             public void onConnected() {
                 runLater(() -> {
-                    log.info("Сервер " + world.getServerName() + " запущен на " + world.getPort() + " для принятия unicast");
+                    log.info("Сервер " + world.getServerName() + " запущен на " + world.getAddress() + " [" + world.getPort() + "] для принятия unicast");
                 });
             }
 
@@ -84,11 +110,11 @@ public class GameplayState extends State {
                 });
             }
         });
-        component.start(Const.ANYCAST_PORT, new NetworkComponent.onAcceptListener() {
+        component.start(world.getAnycastAddress(), world.getAnycastPort(), new NetworkComponent.onAcceptListener() {
             @Override
             public void onConnected() {
                 runLater(() -> {
-                    log.info("Сервер " + world.getServerName() + " запущен на " + Const.ANYCAST_PORT + " для принятия anycast");
+                    log.info("Сервер " + world.getServerName() + " запущен на " + world.getAnycastAddress() + " [" + world.getAnycastPort() + "] для принятия anycast");
                 });
             }
 

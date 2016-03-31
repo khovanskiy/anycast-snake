@@ -1,5 +1,6 @@
 package com.khovanskiy.snake.common.state;
 
+import lombok.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,6 +11,7 @@ import org.slf4j.LoggerFactory;
 public abstract class State {
     private Context context;
     private Logger logger = LoggerFactory.getLogger(this.getClass());
+    private Bundle bundle;
 
     public void create() {
         logger.info("create");
@@ -37,5 +39,13 @@ public abstract class State {
 
     public void dispose() {
         logger.info("dispose");
+    }
+
+    public void setBundle(@NonNull Bundle bundle) {
+        this.bundle = bundle;
+    }
+
+    public Bundle getBundle() {
+        return bundle;
     }
 }

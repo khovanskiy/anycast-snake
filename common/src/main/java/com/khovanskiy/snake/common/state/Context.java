@@ -12,9 +12,14 @@ public class Context {
     private final Queue<Runnable> queue = new ArrayDeque<>();
 
     public <T extends State> void startState(State current, Class<T> clazz) {
+        startState(current, clazz, new Bundle());
+    }
+
+    public <T extends State> void startState(State current, Class<T> clazz, Bundle bundle) {
         T newState;
         try {
             newState = clazz.newInstance();
+            newState.setBundle(bundle);
             newState.setContext(this);
         } catch (IllegalAccessException | InstantiationException e) {
             throw new RuntimeException(e);

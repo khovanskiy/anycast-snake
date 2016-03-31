@@ -2,7 +2,6 @@ package com.khovanskiy.snake.common.model;
 
 import com.badlogic.gdx.math.Vector2;
 import com.khovanskiy.snake.common.Direction;
-import com.sun.xml.internal.ws.Closeable;
 import lombok.Data;
 
 import java.io.Serializable;

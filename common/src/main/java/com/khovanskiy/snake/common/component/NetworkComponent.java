@@ -1,5 +1,6 @@
 package com.khovanskiy.snake.common.component;
 
+import com.khovanskiy.snake.common.Const;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -85,11 +86,11 @@ public class NetworkComponent extends Component {
      * @param port порт
      * @param listener обработчик новых подключений
      */
-    public NetworkComponent start(int port, onAcceptListener listener) {
+    public NetworkComponent start(InetAddress address, int port, onAcceptListener listener) {
         synchronized (acceptors) {
             Accepter accepter = acceptors.get(port);
             if (accepter == null) {
-                accepter = new Accepter(port, listener);
+                accepter = new Accepter(address, port, listener);
                 new Thread(accepter).start();
             }
             return this;
@@ -261,12 +262,13 @@ public class NetworkComponent extends Component {
     }
 
     private class Accepter implements Runnable {
-
+        private final InetAddress address;
         private final int port;
         private volatile boolean isRunning = true;
         private onAcceptListener listener;
 
-        public Accepter(int port, onAcceptListener listener) {
+        public Accepter(InetAddress address, int port, onAcceptListener listener) {
+            this.address = address;
             this.port = port;
             this.listener = listener;
         }
@@ -275,7 +277,7 @@ public class NetworkComponent extends Component {
         public void run() {
             int attempt = 0;
             while (isRunning && attempt < MAX_ATTEMPTS_COUNT) {
-                try (ServerSocket accepter = new ServerSocket(port)) {
+                try (ServerSocket accepter = new ServerSocket(port, 50, address)) {
                     attempt = 0;
                     listener.onConnected();
                     while (!accepter.isClosed()) {
@@ -284,7 +286,7 @@ public class NetworkComponent extends Component {
                         listener.onAccept(new TCPConnection(NetworkComponent.this, socket));
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    log.error(e.getMessage(), e);
                     ++attempt;
                 }
             }
