@@ -1,15 +1,18 @@
 package com.khovanskiy.snake.common.state;
 
-import java.util.ArrayDeque;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * @author victor
  */
+@Slf4j
 public class Context {
     public State currentState;
     public static final int MAX_COUNT = 64;
-    private final Queue<Runnable> queue = new ArrayDeque<>();
+    private final Queue<Runnable> queue = new ConcurrentLinkedQueue<>();
     private final Thread mainThread;
 
     public Context() {
@@ -39,12 +42,14 @@ public class Context {
     }
 
     public void update(double dt) {
-        synchronized (queue) {
-            int count = 0;
-            while (!queue.isEmpty() && count < MAX_COUNT) {
-                queue.poll().run();
-                ++count;
+        int count = 0;
+        while (count < MAX_COUNT) {
+            Runnable runnable = queue.poll();
+            if (runnable == null) {
+                break;
             }
+            runnable.run();
+            ++count;
         }
         currentState.update(dt);
     }
@@ -54,8 +59,6 @@ public class Context {
     }
 
     public void runLater(Runnable runnable) {
-        synchronized (queue) {
-            queue.add(runnable);
-        }
+        queue.add(runnable);
     }
 }

@@ -6,18 +6,27 @@ import com.khovanskiy.snake.server.state.GameplayState;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetAddress;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * @author victor
  */
 @Slf4j
 public class ServerApplication implements Runnable {
+    /**
+     * Количество тиков в секунду
+     */
+    public static final int TICKS_PER_SECOND = 5;
+    public static final int SKIP_TICKS = 1000 / TICKS_PER_SECOND;
+    public static final int MAX_FRAMESKIP = 20;
+    private long nextGameTick;
     private final String serverName;
     private final InetAddress address;
     private final int port;
     private final InetAddress anycastAddress;
     private final int anycastPort;
-    private final Context context = new Context();
+    private Context context;
 
     public static void main(String[] args) throws Exception {
         if (args.length != 5) {
@@ -44,14 +53,16 @@ public class ServerApplication implements Runnable {
         bundle.putExtra(GameplayState.PORT, port);
         bundle.putExtra(GameplayState.ANYCAST_ADDRESS, anycastAddress);
         bundle.putExtra(GameplayState.ANYCAST_PORT, anycastPort);
-        context.startState(null, GameplayState.class, bundle);
-        while (true) {
-            context.update(1d);
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        Timer timer = new Timer();
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                if (context == null) {
+                    context = new Context();
+                    context.startState(null, GameplayState.class, bundle);
+                }
+                context.update(1d);
             }
-        }
+        }, 0, 500);
     }
 }

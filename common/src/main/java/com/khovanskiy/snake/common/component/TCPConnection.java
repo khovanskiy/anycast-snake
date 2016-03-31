@@ -7,6 +7,7 @@ import rx.schedulers.Schedulers;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
@@ -24,7 +25,6 @@ public class TCPConnection {
     private final NetworkComponent component;
     private final Socket socket;
     final InetSocketAddress address;
-    private volatile Listener listener;
     private final Subscription sender;
     private final Observable<Object> receiver;
     private LinkedBlockingQueue<Serializable> queue = new LinkedBlockingQueue<>();
@@ -41,13 +41,25 @@ public class TCPConnection {
                         Object object = queue.take();
                         stream.writeObject(object);
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        subscriber.onError(e);
                     }
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 subscriber.onError(e);
             }
-        }).subscribeOn(SCHEDULER).subscribe();
+        }).subscribeOn(SCHEDULER).subscribe(new Subscriber<Void>() {
+            @Override
+            public void onCompleted() {
+            }
+
+            @Override
+            public void onError(Throwable ignored) {
+            }
+
+            @Override
+            public void onNext(Void ignored) {
+            }
+        });
 
         this.receiver = Observable.create(subscriber -> {
             try (ObjectInputStream stream = new ObjectInputStream(socket.getInputStream())) {

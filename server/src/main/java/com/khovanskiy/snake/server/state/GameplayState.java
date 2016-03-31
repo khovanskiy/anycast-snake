@@ -1,20 +1,17 @@
 package com.khovanskiy.snake.server.state;
 
-import com.badlogic.gdx.math.Vector2;
 import com.khovanskiy.snake.common.Const;
 import com.khovanskiy.snake.common.component.NetworkComponent;
 import com.khovanskiy.snake.common.component.TCPConnection;
 import com.khovanskiy.snake.common.message.AuthMessage;
 import com.khovanskiy.snake.common.message.ClientStatusMessage;
 import com.khovanskiy.snake.common.message.TokenMessage;
-import com.khovanskiy.snake.common.model.Apple;
 import com.khovanskiy.snake.common.model.GameObject;
 import com.khovanskiy.snake.common.model.GameWorld;
 import com.khovanskiy.snake.common.model.Player;
 import com.khovanskiy.snake.common.state.State;
 import com.khovanskiy.snake.server.model.ServerSession;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.SerializationUtils;
 
 import java.util.UUID;
@@ -82,7 +79,7 @@ public class GameplayState extends State {
 
                             Player player = session.getConnectionToPlayerMap().get(connection);
                             if (player != null) {
-                                player.direction = message.getDirection();
+                                player.setDirection(message.getDirection());
                             }
 
                         }

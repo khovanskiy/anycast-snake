@@ -77,7 +77,7 @@ public class Snake extends Model {
     }
 
     public void increase() {
-        parts.add(new Part(getTailPosition()));
+        parts.add(new Part(parts.get(1).getPosition()));
     }
 
     /**

@@ -25,11 +25,30 @@ public class GameWorld extends GameObject {
     private Map<UUID, Apple> apples = new HashMap<>();
     private Map<UUID, Brick> bricks = new HashMap<>();
 
+    public GameWorld() {
+        for (int x = 0; x < WORLD_WIDTH; ++x) {
+            UUID brickId = UUID.randomUUID();
+            bricks.put(brickId, new Brick(brickId, new Vector2(x, 0)));
+        }
+        for (int x = 0; x < WORLD_WIDTH; ++x) {
+            UUID brickId = UUID.randomUUID();
+            bricks.put(brickId, new Brick(brickId, new Vector2(x, WORLD_HEIGHT - 1)));
+        }
+        for (int y = 0; y < WORLD_HEIGHT; ++y) {
+            UUID brickId = UUID.randomUUID();
+            bricks.put(brickId, new Brick(brickId, new Vector2(0, y)));
+        }
+        for (int y = 0; y < WORLD_HEIGHT; ++y) {
+            UUID brickId = UUID.randomUUID();
+            bricks.put(brickId, new Brick(brickId, new Vector2(WORLD_WIDTH - 1, y)));
+        }
+    }
+
     public void update(double dt) {
         if (!players.isEmpty()) {
             if (RandomUtils.nextInt(0, 10) % 5 == 0) {
                 UUID appleId = UUID.randomUUID();
-                apples.put(appleId, new Apple(appleId, new Vector2(RandomUtils.nextInt(0, WORLD_WIDTH), RandomUtils.nextInt(0, WORLD_HEIGHT))));
+                apples.put(appleId, new Apple(appleId, new Vector2(RandomUtils.nextInt(1, WORLD_WIDTH), RandomUtils.nextInt(1, WORLD_HEIGHT))));
             }
         }
         allPlayers().forEach(player -> player.update(dt));

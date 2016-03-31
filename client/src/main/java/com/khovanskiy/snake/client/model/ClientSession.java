@@ -39,6 +39,7 @@ public class ClientSession extends GameObject {
      */
     private String serverName;
 
+    public Direction prevDirection;
     public Direction direction = Direction.UP;
 
     private GameWorld gameWorld;

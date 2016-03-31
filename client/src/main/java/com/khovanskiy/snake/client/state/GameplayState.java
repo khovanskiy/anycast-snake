@@ -31,14 +31,25 @@ import java.net.InetSocketAddress;
 public class GameplayState extends State {
     public static final int GRID_SIZE = 20;
     private SpriteBatch batch = new SpriteBatch();
+    private Texture backgroundTexture = new Texture(Gdx.files.internal("textures/background.png"));
+    private Texture brickTexture = new Texture(Gdx.files.internal("textures/brick.png"));
     private Texture snakeTexture = new Texture(Gdx.files.internal("textures/snake-graphics.png"));
     public static final int TILE_WIDTH = 64;
     public static final int TILE_HEIGHT = 64;
+
+    private Sprite backgroundView = new Sprite(backgroundTexture);
+
+    private Sprite brickView = new Sprite(brickTexture);
+    {
+        brickView.setOriginCenter();
+        brickView.setSize(GRID_SIZE, GRID_SIZE);
+    }
     private Sprite appleView = new Sprite(snakeTexture, 0, 192, TILE_WIDTH, TILE_HEIGHT);
     {
         appleView.setOriginCenter();
         appleView.setSize(GRID_SIZE, GRID_SIZE);
     }
+
     private Sprite headUp = new Sprite(snakeTexture, 192, 0, TILE_WIDTH, TILE_HEIGHT);
     private Sprite headDown = new Sprite(snakeTexture, 256, 64, TILE_WIDTH, TILE_HEIGHT);
     private Sprite headLeft = new Sprite(snakeTexture, 192, 64, TILE_WIDTH, TILE_HEIGHT);
@@ -91,8 +102,9 @@ public class GameplayState extends State {
     @Override
     public void update(double dt) {
         super.update(dt);
-        if (session.getServerConnection() != null) {
+        if (session.getServerConnection() != null && session.prevDirection != session.direction) {
             session.getServerConnection().send(new ClientStatusMessage(session.direction));
+            session.prevDirection = session.direction;
         }
     }
 
@@ -110,7 +122,16 @@ public class GameplayState extends State {
         }
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         batch.begin();
+
         if (session.getGameWorld() != null) {
+            backgroundView.setSize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+            backgroundView.draw(batch);
+
+            session.getGameWorld().allBricks().forEach(brick -> {
+                brickView.setPosition(brick.x() * GRID_SIZE, brick.y() * GRID_SIZE);
+                brickView.draw(batch);
+            });
+
             session.getGameWorld().allPlayers().forEach(player -> {
                 if (player.getSnake() != null) {
                     for (int i = 0; i < player.getSnake().getParts().size(); ++i) {
