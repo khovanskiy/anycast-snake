@@ -63,6 +63,6 @@ public class ServerApplication implements Runnable {
                 }
                 context.update(1d);
             }
-        }, 0, 500);
+        }, 0, SKIP_TICKS);
     }
 }

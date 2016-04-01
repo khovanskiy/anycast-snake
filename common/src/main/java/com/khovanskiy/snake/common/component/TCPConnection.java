@@ -40,6 +40,9 @@ public class TCPConnection {
                     try {
                         Object object = queue.take();
                         stream.writeObject(object);
+                        // http://stackoverflow.com/questions/17576153/java-serialization-socket-inputstream-flush
+                        stream.flush();
+                        stream.reset();
                     } catch (InterruptedException e) {
                         subscriber.onError(e);
                     }
